@@ -5,17 +5,15 @@ class Game2048 {
         this.aiDisplay = aiDisplay;
         this.board = Array.from({ length: 4 }, () => Array(4).fill(0));
         this.score = 0;
+        this.isAIActive = false;
         this.init();
     }
 
     init() {
-        if (!this.container) {
-            console.error('Container element not found');
-            return;
-        }
         this.addNewTile();
         this.addNewTile();
         this.render();
+        this.addEventListeners();
     }
 
     addNewTile() {
@@ -34,10 +32,6 @@ class Game2048 {
     }
 
     render() {
-        if (!this.container) {
-            console.error('Container element not found');
-            return;
-        }
         this.container.innerHTML = '';
         for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
@@ -134,6 +128,7 @@ class Game2048 {
     }
 
     makeAIMove() {
+        if (!this.isAIActive) return;
         const bestMove = this.findBestMove();
         if (bestMove) {
             this.showAISuggestion(bestMove);
@@ -149,16 +144,43 @@ class Game2048 {
             alert('No more moves available, AI cannot proceed.');
         }
     }
+
+    addEventListeners() {
+        document.addEventListener('keydown', event => {
+            if (this.isAIActive) return; // AIが動作中の場合は人間の操作を無視
+            let moved = false;
+            if (event.key === 'ArrowLeft') {
+                this.moveLeft();
+                moved = true;
+            } else if (event.key === 'ArrowRight') {
+                this.moveRight();
+                moved = true;
+            } else if (event.key === 'ArrowUp') {
+                this.moveUp();
+                moved = true;
+            } else if (event.key === 'ArrowDown') {
+                this.moveDown();
+                moved = true;
+            }
+
+            if (moved) {
+                this.addNewTile();
+                this.render();
+                if (!this.isMovePossible()) {
+                    alert('Game Over!');
+                }
+            }
+        });
+    }
 }
 
 let game;
 
 function startAI() {
-    game = new Game2048(
-        document.getElementById('game-container'),
-        document.getElementById('score'),
-        document.getElementById('ai-suggestion')
-    );
+    game.isAIActive = true;
+    game.moveDown();
+    game.addNewTile();
+    game.render();
     game.makeAIMove();
 }
 
