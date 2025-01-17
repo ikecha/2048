@@ -9,6 +9,10 @@ class Game2048 {
     }
 
     init() {
+        if (!this.container) {
+            console.error('Container element not found');
+            return;
+        }
         this.addNewTile();
         this.addNewTile();
         this.render();
@@ -30,6 +34,10 @@ class Game2048 {
     }
 
     render() {
+        if (!this.container) {
+            console.error('Container element not found');
+            return;
+        }
         this.container.innerHTML = '';
         for (let r = 0; r < 4; r++) {
             for (let c = 0; c < 4; c++) {
