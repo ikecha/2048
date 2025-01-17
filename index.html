@@ -63,11 +63,12 @@
 <body>
     <div class="info">
         <div id="score">Score: 0</div>
-        <div id="ai-suggestion" class="ai-suggestion">AI Suggestion: N/A</div>
+        <div id="ai-suggestion" class="ai-suggestion">AI Action: N/A</div>
     </div>
     <div class="game-container" id="game-container">
         <!-- Tiles will be dynamically added here -->
     </div>
+    <button onclick="startAI()">Start AI</button>
     <script>
         class Game2048 {
             constructor(container, scoreDisplay, aiDisplay) {
@@ -83,7 +84,6 @@
                 this.addNewTile();
                 this.addNewTile();
                 this.render();
-                this.addEventListeners();
             }
 
             addNewTile() {
@@ -116,7 +116,6 @@
                     }
                 }
                 this.updateScore();
-                this.showAISuggestion();
             }
 
             slide(row) {
@@ -155,33 +154,6 @@
                 this.board = this.board[0].map((_, c) => this.board.map(row => row[c]));
             }
 
-            addEventListeners() {
-                document.addEventListener('keydown', event => {
-                    let moved = false;
-                    if (event.key === 'ArrowLeft') {
-                        this.moveLeft();
-                        moved = true;
-                    } else if (event.key === 'ArrowRight') {
-                        this.moveRight();
-                        moved = true;
-                    } else if (event.key === 'ArrowUp') {
-                        this.moveUp();
-                        moved = true;
-                    } else if (event.key === 'ArrowDown') {
-                        this.moveDown();
-                        moved = true;
-                    }
-
-                    if (moved) {
-                        this.addNewTile();
-                        this.render();
-                        if (!this.isMovePossible()) {
-                            alert('Game Over!');
-                        }
-                    }
-                });
-            }
-
             isMovePossible() {
                 for (let r = 0; r < 4; r++) {
                     for (let c = 0; c < 4; c++) {
@@ -197,15 +169,24 @@
                 this.scoreDisplay.textContent = `Score: ${this.score}`;
             }
 
-            showAISuggestion() {
-                const moves = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+            showAISuggestion(action) {
+                this.aiDisplay.textContent = `AI Action: ${action}`;
+            }
+
+            findBestMove() {
+                const moves = ['left', 'right', 'up', 'down'];
                 let bestMove = null;
                 let maxScore = -1;
 
                 for (const move of moves) {
-                    const simulatedBoard = this.simulateMove(move);
-                    if (simulatedBoard) {
-                        const score = this.calculateBoardScore(simulatedBoard);
+                    const simulatedGame = new Game2048(null, null, null);
+                    simulatedGame.board = this.board.map(row => [...row]);
+                    simulatedGame.score = this.score;
+
+                    simulatedGame[`move${move.charAt(0).toUpperCase() + move.slice(1)}`]();
+
+                    if (simulatedGame.board.some((row, rIndex) => row.some((val, cIndex) => val !== this.board[rIndex][cIndex]))) {
+                        const score = simulatedGame.board.flat().reduce((acc, val) => acc + val, 0);
                         if (score > maxScore) {
                             maxScore = score;
                             bestMove = move;
@@ -213,42 +194,44 @@
                     }
                 }
 
-                this.aiDisplay.textContent = `AI Suggestion: ${bestMove ? bestMove.replace('Arrow', '') : 'N/A'}`;
+                return bestMove;
             }
 
-            simulateMove(move) {
-                const boardCopy = this.board.map(row => [...row]);
-                const gameCopy = new Game2048(null, null, null);
-                gameCopy.board = boardCopy;
-                gameCopy.score = this.score;
-
-                if (move === 'ArrowLeft') {
-                    gameCopy.moveLeft();
-                } else if (move === 'ArrowRight') {
-                    gameCopy.moveRight();
-                } else if (move === 'ArrowUp') {
-                    gameCopy.moveUp();
-                } else if (move === 'ArrowDown') {
-                    gameCopy.moveDown();
+            makeAIMove() {
+                const bestMove = this.findBestMove();
+                if (bestMove) {
+                    this.showAISuggestion(bestMove);
+                    this[`move${bestMove.charAt(0).toUpperCase() + bestMove.slice(1)}`]();
+                    this.addNewTile();
+                    this.render();
+                    if (!this.isMovePossible()) {
+                        alert('Game Over!');
+                        return;
+                    }
+                    setTimeout(() => this.makeAIMove(), 500);
+                } else {
+                    alert('No more moves available, AI cannot proceed.');
                 }
-
-                if (JSON.stringify(boardCopy) === JSON.stringify(gameCopy.board)) {
-                    return null; // No move made
-                }
-                return gameCopy.board;
-            }
-
-            calculateBoardScore(board) {
-                // Example scoring function based on the sum of tile values
-                return board.flat().reduce((acc, val) => acc + val, 0);
             }
         }
 
+        let game;
+
+        function startAI() {
+            game = new Game2048(
+                document.getElementById('game-container'),
+                document.getElementById('score'),
+                document.getElementById('ai-suggestion')
+            );
+            game.makeAIMove();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            const gameContainer = document.getElementById('game-container');
-            const scoreDisplay = document.getElementById('score');
-            const aiDisplay = document.getElementById('ai-suggestion');
-            new Game2048(gameContainer, scoreDisplay, aiDisplay);
+            game = new Game2048(
+                document.getElementById('game-container'),
+                document.getElementById('score'),
+                document.getElementById('ai-suggestion')
+            );
         });
     </script>
 </body>
